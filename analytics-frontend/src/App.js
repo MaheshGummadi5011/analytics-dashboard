@@ -26,7 +26,7 @@ function App() {
     });
 
     // Your backend API URL
-    const API_URL = 'http://localhost:5000';
+    const API_URL = 'https://analytics-dashboard-backend-zehc.onrender.com';
 
     // This useEffect now depends on 'activeFilter'
     // It will run on first load, AND any time 'activeFilter' changes
