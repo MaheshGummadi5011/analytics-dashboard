@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000;
 // --- CRITICAL: CORS Configuration ---
 // This is a placeholder. After you deploy your Vercel frontend,
 // you will need to come back and replace this URL.
-const VERCEL_FRONTEND_URL = "http://localhost:3000"; // <-- We will change this later
+const VERCEL_FRONTEND_URL = "https://analytics-dashboard-gamma-kohl.vercel.app/"; // <-- We will change this later
 
 const corsOptions = {
     // We allow both the future Vercel URL and our local development URL
