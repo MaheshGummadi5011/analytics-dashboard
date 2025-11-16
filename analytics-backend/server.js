@@ -3,31 +3,27 @@ const mysql = require('mysql2/promise');
 const cors = require('cors');
 
 const app = express();
-// Render will set the PORT environment variable.
-// We use that, or 5000 for local development.
 const port = process.env.PORT || 5000;
 
 // --- CRITICAL: CORS Configuration ---
-// This is a placeholder. After you deploy your Vercel frontend,
-// you will need to come back and replace this URL.
-const VERCEL_FRONTEND_URL = "https://analytics-dashboard-1.vercel.app/"; // <-- We will change this later
+// I have put your NEW Vercel URL from your screenshot here.
+const VERCEL_FRONTEND_URL = "https://analytics-dashboard-navy-gamma.vercel.app"; 
 
 const corsOptions = {
-    // We allow both the future Vercel URL and our local development URL
+    // This now allows requests from your new live Vercel app and from localhost
     origin: [VERCEL_FRONTEND_URL, "http://localhost:3000"],
     optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
 
 // --- CRITICAL: Database Connection ---
-// This code now reads from the Render Environment Variables
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT, // We now use the port from Aiven
-    ssl: { "rejectUnauthorized": false } // Allow Aiven's self-signed cert
+    port: process.env.DB_PORT,
+    ssl: { "rejectUnauthorized": false } // The fix for Aiven's SSL
 });
 
 // Helper function
@@ -41,7 +37,9 @@ const buildWhereClause = (startDate, endDate) => {
     return { whereClause, params };
 };
 
+
 // --- API Endpoints ---
+// (All endpoints remain the same)
 
 // Endpoint 1: For the main KPI "Cards"
 app.get('/api/kpis', async (req, res) => {
@@ -96,6 +94,7 @@ app.get('/api/performance-over-time', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         const { whereClause, params } = buildWhereClause(startDate, endDate);
+
         const sql = `
             SELECT
                 DATE_FORMAT(report_date, '%Y-%m-%d') AS report_date,
@@ -106,6 +105,7 @@ app.get('/api/performance-over-time', async (req, res) => {
             GROUP BY report_date, channel
             ORDER BY report_date ASC, channel ASC;
         `;
+
         const [rows] = await pool.query(sql, params); 
         res.json(rows);
     } catch (err) {
