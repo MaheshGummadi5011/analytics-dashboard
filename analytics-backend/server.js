@@ -3,14 +3,31 @@ const mysql = require('mysql2/promise');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
-const port = 5000;
+// Render will set the PORT environment variable.
+// We use that, or 5000 for local development.
+const port = process.env.PORT || 5000;
 
+// --- CRITICAL: CORS Configuration ---
+// This is a placeholder. After you deploy your Vercel frontend,
+// you will need to come back and replace this URL.
+const VERCEL_FRONTEND_URL = "http://localhost:3000"; // <-- We will change this later
+
+const corsOptions = {
+    // We allow both the future Vercel URL and our local development URL
+    origin: [VERCEL_FRONTEND_URL, "http://localhost:3000"],
+    optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
+// --- CRITICAL: Database Connection ---
+// This code now reads from the Render Environment Variables
 const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: 'root', // <-- !! REMEMBER TO CHECK YOUR PASSWORD !!
-    database: 'marketing_db'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT, // We now use the port from Aiven
+    ssl: { "rejectUnauthorized": true } // Aiven requires SSL
 });
 
 // Helper function
@@ -24,10 +41,9 @@ const buildWhereClause = (startDate, endDate) => {
     return { whereClause, params };
 };
 
-
 // --- API Endpoints ---
 
-// Endpoint 1: For the main KPI "Cards" (No Change)
+// Endpoint 1: For the main KPI "Cards"
 app.get('/api/kpis', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
@@ -54,7 +70,7 @@ app.get('/api/kpis', async (req, res) => {
     }
 });
 
-// Endpoint 2: For the "Cost per Channel" Pie Chart (No Change)
+// Endpoint 2: For the "Cost per Channel" Pie Chart
 app.get('/api/cost-by-channel', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
@@ -75,13 +91,11 @@ app.get('/api/cost-by-channel', async (req, res) => {
     }
 });
 
-// --- Endpoint 3: (UPGRADED) ---
-// This now groups by date AND channel to get data for each line
+// Endpoint 3: For the "Performance Over Time" Line Chart
 app.get('/api/performance-over-time', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         const { whereClause, params } = buildWhereClause(startDate, endDate);
-
         const sql = `
             SELECT
                 DATE_FORMAT(report_date, '%Y-%m-%d') AS report_date,
@@ -91,8 +105,7 @@ app.get('/api/performance-over-time', async (req, res) => {
             ${whereClause}
             GROUP BY report_date, channel
             ORDER BY report_date ASC, channel ASC;
-        `; // <-- QUERY IS NOW UPGRADED
-
+        `;
         const [rows] = await pool.query(sql, params); 
         res.json(rows);
     } catch (err) {
@@ -101,7 +114,7 @@ app.get('/api/performance-over-time', async (req, res) => {
     }
 });
 
-// Endpoint 4: For the "Raw Data" Table (No Change)
+// Endpoint 4: For the "Raw Data" Table
 app.get('/api/raw-data', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
